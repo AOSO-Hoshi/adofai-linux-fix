@@ -62,6 +62,8 @@ mcs -target:library \
     -r:"$MANAGED/UnityModManager/0Harmony.dll" \
     -r:"$MANAGED/UnityModManager/UnityModManager.dll" \
     -r:"$MANAGED/UnityEngine.CoreModule.dll" \
+    -r:"$MANAGED/UnityEngine.UIModule.dll" \
+    -r:"$MANAGED/UnityEngine.UI.dll" \
     -r:"$MANAGED/UnityEngine.IMGUIModule.dll" \
     -r:"$MANAGED/UnityEngine.InputLegacyModule.dll" \
     -r:"$MANAGED/UnityEngine.dll" \

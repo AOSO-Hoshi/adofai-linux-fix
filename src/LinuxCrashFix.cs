@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -201,6 +202,34 @@ namespace LinuxCrashFix
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Fix 2: KeyViewer Drawer cctor 预热
+    /// KV 的 Drawer 静态构造函数缓存 GUI.skin; 在这台机器上 cctor 首次触发时
+    /// 常不在有效 OnGUI 事件里 (TypeInitializationException 永久中毒, 设置页
+    /// 打不开)。在 UMM UI.OnGUI 的 postfix (真 OnGUI 上下文) 里提前跑一次。
+    /// </summary>
+    [HarmonyPatch(typeof(UnityModManager.UI), "OnGUI")]
+    public static class KeyViewerDrawerPrewarm
+    {
+        static bool done;
+        static void Postfix()
+        {
+            if (done) return;
+            try
+            {
+                var asm = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "KeyViewer");
+                if (asm == null) return;
+                var drawerT = asm.GetType("KeyViewer.Core.Drawer");
+                if (drawerT == null) { done = true; return; }
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(drawerT.TypeHandle);
+                Main.ModEntry.Logger.Log("[LinuxCrashFix] KeyViewer Drawer cctor 已预热。");
+                done = true;
+            }
+            catch { done = true; }
         }
     }
 
