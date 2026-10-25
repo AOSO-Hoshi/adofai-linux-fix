@@ -75,7 +75,7 @@ echo "[+] Compilation successful: $OUTPUT_DLL ($(stat -c%s "$OUTPUT_DLL") bytes)
 # Create release zip
 if command -v zip &>/dev/null; then
     cd "$ROOT_DIR/dist"
-    ZIP_NAME="LinuxCrashFix-v1.0.0.zip"
+    ZIP_NAME="LinuxCrashFix-v1.0.1.zip"
     rm -f "$ZIP_NAME"
     zip -r "$ZIP_NAME" LinuxCrashFix/ >/dev/null
     echo "[+] Created UMM-ready package: $ROOT_DIR/dist/$ZIP_NAME"
