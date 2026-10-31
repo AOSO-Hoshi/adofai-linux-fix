@@ -45,6 +45,14 @@ cd adofai-linux-fix
 ./install.sh --auto
 ```
 
+安装时会把 Unity Doorstop 4.6.0 放到 `~/.local/share/adofai-linux-fix/doorstop/`，并写进 Steam 的游戏启动项。之后游戏更新把原来的 DLL 补丁盖掉，从 Steam 再开一次仍然会注入，不用手动再来一遍。机器上需要已经装过一次 Unity Mod Manager。启动项被清空，或者不经过 Steam 直接运行游戏时，这个钩子不会生效。`doorstop/libdoorstop.so` 是 [Unity Doorstop](https://github.com/NeighTools/UnityDoorstop) 4.6.0，许可证是 LGPL-2.1，全文在 `doorstop/LICENSE`。
+
+只重装这个钩子：
+
+```bash
+./install.sh --doorstop
+```
+
 #### 方式二：手动安装已编译模组
 
 1. 前往 `dist/` 目录获取 `LinuxCrashFix-v1.0.1.zip`（或从 GitHub Releases 下载）；
@@ -58,7 +66,7 @@ cd adofai-linux-fix
 ### 工具箱功能 (`adofai_fix.py`)
 
 本套件内置了零第三方依赖的 Python 控制台应用程序：
-- **`[1] 一键全自动修复`**：自动完成游戏路径检测、核心备份、模组部署、字体修正与白名单绕过。
+- **`[1] 一键全自动修复`**：自动完成持久注入、游戏路径检测、模组部署、字体修正与白名单绕过。
 - **`[2] 安装/更新模组`**：单独部署 `LinuxCrashFix.dll`。
 - **`[3] 修复中文字体`**：列出并选择本机字体库中的合适中文字体写入 `Params.xml`。
 - **`[4] 源码一键编译`**：调用本地 Mono 编译器重新生成 DLL。
@@ -86,6 +94,14 @@ This toolkit provides an all-in-one fix and injection suite:
 git clone https://github.com/AOSO-Hoshi/adofai-linux-fix.git
 cd adofai-linux-fix
 ./install.sh --auto
+```
+
+The installer copies Unity Doorstop 4.6.0 to `~/.local/share/adofai-linux-fix/doorstop/` and adds it to the game's Steam launch options. After a game update replaces the old patched DLL, launching from Steam injects Unity Mod Manager again. Unity Mod Manager itself still has to be installed once. Clearing the launch options, or starting the game outside Steam, skips the hook. `doorstop/libdoorstop.so` is [Unity Doorstop](https://github.com/NeighTools/UnityDoorstop) 4.6.0, LGPL-2.1 (`doorstop/LICENSE`).
+
+To refresh only the hook:
+
+```bash
+./install.sh --doorstop
 ```
 
 #### Method 2: Manual Installation via UMM

@@ -31,7 +31,7 @@ mkdir -p "$BUILD/DEBIAN" \
 
 # ---------------------------------------------------------------- 应用文件
 cp "$ROOT_DIR/adofai_fix.py" "$BUILD$APP/"
-cp -r "$ROOT_DIR/src" "$ROOT_DIR/scripts" "$ROOT_DIR/dist" "$BUILD$APP/"
+cp -r "$ROOT_DIR/src" "$ROOT_DIR/scripts" "$ROOT_DIR/dist" "$ROOT_DIR/doorstop" "$BUILD$APP/"
 find "$BUILD$APP" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
 chmod -R a+rX "$BUILD$APP"
 

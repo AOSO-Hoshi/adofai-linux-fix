@@ -87,6 +87,118 @@ def check_system_cjk_fonts() -> List[str]:
         detected = ["DejaVu Sans"]
     return detected if detected else ["DejaVu Sans"]
 
+ADOFAI_APPID = "977950"
+DOORSTOP_RUNTIME = ("launch.sh", "run.sh", "libdoorstop.so", "LICENSE", ".doorstop_version")
+UMM_BACKUP_FILES = (
+    "UnityModManager.dll",
+    "UnityModManager.xml",
+    "0Harmony.dll",
+    "dnlib.dll",
+    "Config.xml",
+    "Params.xml",
+)
+
+
+def doorstop_home() -> Path:
+    return Path.home() / ".local/share/adofai-linux-fix/doorstop"
+
+
+def steam_is_running() -> bool:
+    try:
+        out = subprocess.check_output(
+            ["pgrep", "-af", "ubuntu12_32/steam"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+    return bool(out.strip())
+
+
+def iter_steam_localconfigs():
+    roots = [
+        Path.home() / ".steam/steam/userdata",
+        Path.home() / ".steam/debian-installation/userdata",
+        Path.home() / ".local/share/Steam/userdata",
+        Path.home() / ".var/app/com.valvesoftware.Steam/data/Steam/userdata",
+    ]
+    seen = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for cfg in root.glob("*/config/localconfig.vdf"):
+            try:
+                real = cfg.resolve()
+            except OSError:
+                continue
+            if real in seen:
+                continue
+            seen.add(real)
+            yield cfg
+
+
+def merge_launch_option(current: str, script: str) -> str:
+    current = current.strip()
+    if script in current:
+        return current
+    if not current:
+        return f"{script} %command%"
+    if "%command%" in current:
+        return current.replace("%command%", f"{script} %command%", 1)
+    return f"{script} %command%"
+
+
+def rewrite_app_launch_option(text: str, appid: str, script: str):
+    """Return (new_text, found, changed) for one Steam app block."""
+    token = f'"{appid}"'
+    pos = 0
+    found = False
+    changed = False
+    while True:
+        start = text.find(token, pos)
+        if start < 0:
+            break
+        brace = text.find("{", start)
+        if brace < 0 or brace - start > 40:
+            pos = start + len(token)
+            continue
+        depth = 0
+        end = None
+        for idx in range(brace, len(text)):
+            char = text[idx]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    end = idx + 1
+                    break
+        if end is None:
+            break
+        block = text[brace:end]
+        key = '"LaunchOptions"'
+        key_at = block.find(key)
+        if key_at < 0:
+            pos = end
+            continue
+        quote_open = block.find('"', key_at + len(key))
+        quote_close = block.find('"', quote_open + 1) if quote_open >= 0 else -1
+        if quote_open < 0 or quote_close < 0:
+            pos = end
+            continue
+        found = True
+        current = block[quote_open + 1:quote_close]
+        updated = merge_launch_option(current, script)
+        if updated != current:
+            block = block[:quote_open + 1] + updated + block[quote_close:]
+            text = text[:brace] + block + text[end:]
+            changed = True
+            pos = brace + len(block)
+        else:
+            pos = end
+    return text, found, changed
+
+
 class AdoFaiToolkit:
     def __init__(self, game_dir: Path):
         self.game_dir = game_dir
@@ -121,10 +233,26 @@ class AdoFaiToolkit:
             except Exception:
                 pass
 
+        home = doorstop_home()
+        script = str(home / "launch.sh")
+        doorstop_files = (home / "launch.sh").is_file() and (home / "libdoorstop.so").is_file()
+        launch_option = False
+        for cfg in iter_steam_localconfigs():
+            try:
+                body = cfg.read_text(errors="replace")
+            except OSError:
+                continue
+            _, found, _ = rewrite_app_launch_option(body, ADOFAI_APPID, script)
+            if found and script in body:
+                launch_option = True
+                break
+
         return {
             "game_dir": str(self.game_dir),
             "managed_dir": str(self.managed_dir),
-            "umm_injected": injected,
+            "umm_patched": injected,
+            "umm_injected": injected or (doorstop_files and launch_option),
+            "doorstop": doorstop_files and launch_option,
             "has_backup": self.core_module_backup.is_file(),
             "mod_installed": mod_installed,
             "ui_font": current_font,
@@ -137,7 +265,12 @@ class AdoFaiToolkit:
         print(f" • 游戏根目录: {C_CYAN}{st['game_dir']}{C_RESET}")
         print(f" • Managed 路径: {C_CYAN}{st['managed_dir']}{C_RESET}")
         
-        inj_str = f"{C_GREEN}已注入 (OK){C_RESET}" if st['umm_injected'] else f"{C_RED}未注入 (需要修复){C_RESET}"
+        if st["doorstop"]:
+            inj_str = f"{C_GREEN}Doorstop 启动项（游戏更新后仍会注入）{C_RESET}"
+        elif st["umm_patched"]:
+            inj_str = f"{C_YELLOW}只补在了 CoreModule 上（游戏更新后会掉）{C_RESET}"
+        else:
+            inj_str = f"{C_RED}未注入 (需要修复){C_RESET}"
         print(f" • UMM 底层挂钩: {inj_str}")
 
         bk_str = f"{C_GREEN}存在{C_RESET}" if st['has_backup'] else f"{C_YELLOW}未检测到{C_RESET}"
@@ -206,6 +339,77 @@ class AdoFaiToolkit:
             print(f"{C_RED}[-] 编译失败: {ex}{C_RESET}")
             return False
 
+    def install_doorstop(self) -> bool:
+        """Install the Doorstop launcher outside the game and pin the Steam launch option."""
+        bundled = self.root_dir / "doorstop"
+        if not (bundled / "libdoorstop.so").is_file() or not (bundled / "launch.sh").is_file():
+            print(f"{C_RED}[-] 仓库里缺少 doorstop 运行时，无法安装持久注入。{C_RESET}")
+            return False
+
+        home = doorstop_home()
+        home.mkdir(parents=True, exist_ok=True)
+        for name in DOORSTOP_RUNTIME:
+            src = bundled / name
+            if src.is_file():
+                shutil.copy2(src, home / name)
+        for name in ("launch.sh", "run.sh", "libdoorstop.so"):
+            target = home / name
+            if target.is_file():
+                target.chmod(0o755)
+
+        live = self.umm_dir
+        if (live / "UnityModManager.dll").is_file():
+            stash = home / "backup" / "UnityModManager"
+            stash.mkdir(parents=True, exist_ok=True)
+            copied = 0
+            for name in UMM_BACKUP_FILES:
+                src = live / name
+                if src.is_file():
+                    shutil.copy2(src, stash / name)
+                    copied += 1
+            print(f"{C_GREEN}[+] 已备份 UMM 到 {stash}（{copied} 个文件）。{C_RESET}")
+        else:
+            print(f"{C_YELLOW}[!] 游戏目录里还没有 UnityModManager。钩子已装上，但要先装一次 UMM 才会有东西可注入。{C_RESET}")
+
+        script = str(home / "launch.sh")
+        found = False
+        updated = False
+        blocked = False
+        for cfg in iter_steam_localconfigs():
+            try:
+                text = cfg.read_text(errors="replace")
+            except OSError as ex:
+                print(f"{C_YELLOW}[!] 读不到 {cfg}: {ex}{C_RESET}")
+                continue
+            new_text, app_found, changed = rewrite_app_launch_option(text, ADOFAI_APPID, script)
+            if not app_found:
+                continue
+            found = True
+            if not changed:
+                continue
+            if steam_is_running():
+                blocked = True
+                continue
+            cfg.write_text(new_text)
+            updated = True
+            print(f"{C_GREEN}[+] 已写入 Steam 启动项: {cfg}{C_RESET}")
+
+        if not found:
+            print(f"{C_YELLOW}[!] 没有在 Steam 用户配置里找到 ADOFAI（AppID {ADOFAI_APPID}）。{C_RESET}")
+            print(f"{C_YELLOW}    请在游戏启动项里填这一行:{C_RESET}")
+            print(f"    {script} %command%")
+            return False
+        if blocked:
+            print(f"{C_YELLOW}[!] Steam 正在运行，现在改配置文件会在退出时被盖回去。{C_RESET}")
+            print(f"{C_YELLOW}    请先退出 Steam，再运行一次 ./install.sh --doorstop，或把下面这行填进启动项:{C_RESET}")
+            print(f"    {script} %command%")
+            return False
+        if updated:
+            print(f"{C_GREEN}[+] 持久注入已挂到 Steam 启动项。下次从 Steam 开游戏就会注入。{C_RESET}")
+        else:
+            print(f"{C_GREEN}[+] Steam 启动项里已经有 Doorstop，不用再改。{C_RESET}")
+        return True
+
     def full_auto_setup(self):
         """Execute end-to-end full repair from injection to final state."""
         print(f"{C_CYAN}{C_BOLD}[*] 开始执行全自动一键配置流程 (从注入到完全体)...{C_RESET}")
@@ -216,22 +420,25 @@ class AdoFaiToolkit:
         # 2. 检查核心备份
         if not self.core_module_backup.is_file() and self.core_module.is_file():
             st = self.status()
-            if not st["umm_injected"]:
+            if not st["umm_patched"]:
                 shutil.copy2(self.core_module, self.core_module_backup)
                 print(f"{C_GREEN}[+] 已创建原生 UnityEngine.CoreModule.dll 纯净备份。{C_RESET}")
 
+        print(f"{C_CYAN}[1/4] 安装 Doorstop，让注入在游戏更新后仍然生效...{C_RESET}")
+        self.install_doorstop()
+
         # 3. 安装 LinuxCrashFix 终极模组
-        print(f"{C_CYAN}[1/3] 安装 Linux Crash Fix 核心扩展模组...{C_RESET}")
+        print(f"{C_CYAN}[2/4] 安装 Linux Crash Fix 核心扩展模组...{C_RESET}")
         self.install_mod()
 
         # 4. 修复中文字体
-        print(f"{C_CYAN}[2/3] 配置中文字体与本地化防乱码...{C_RESET}")
+        print(f"{C_CYAN}[3/4] 配置中文字体与本地化防乱码...{C_RESET}")
         self.fix_font()
 
         # 5. 状态确认
-        print(f"{C_CYAN}[3/3] 验证运行环境与防护逻辑...{C_RESET}")
+        print(f"{C_CYAN}[4/4] 验证运行环境与防护逻辑...{C_RESET}")
         st = self.status()
-        print(f"\n{C_GREEN}{C_BOLD}✨ 全自动化修复全部完成！{C_RESET}")
+        print(f"\n{C_GREEN}{C_BOLD}全自动化修复全部完成。{C_RESET}")
         print(f" • Shader 预热崩溃拦截: {C_GREEN}已启用{C_RESET}")
         print(f" • IMGUI 连续拖拽与高分屏优化: {C_GREEN}已启用{C_RESET}")
         print(f" • Together 联机反作弊白名单绕过: {C_GREEN}已启用{C_RESET}")
@@ -242,14 +449,15 @@ def interactive_menu(toolkit: AdoFaiToolkit):
     while True:
         toolkit.print_status()
         print(f"{C_BOLD}请选择操作选项:{C_RESET}")
-        print(f" {C_GREEN}[1]{C_RESET} 一键全自动修复 (从底层到完全体: 模组安装 + 拖拽/崩溃修复 + 字体配置 + 绕过白名单)")
+        print(f" {C_GREEN}[1]{C_RESET} 一键全自动修复 (持久注入 + 模组安装 + 字体配置 + 绕过白名单)")
         print(f" {C_CYAN}[2]{C_RESET} 仅编译并安装/更新 Linux Crash Fix 模组")
         print(f" {C_CYAN}[3]{C_RESET} 修复中文字体 (解决 UMM 方块字乱码)")
         print(f" {C_CYAN}[4]{C_RESET} 重新从源码编译模组 (Build from Source)")
         print(f" {C_CYAN}[5]{C_RESET} 查看当前详细诊断信息")
+        print(f" {C_CYAN}[6]{C_RESET} 只安装持久注入 (Doorstop，游戏更新后不用再手动注入)")
         print(f" {C_RED}[0]{C_RESET} 退出程序")
 
-        choice = input(f"\n{C_BOLD}请输入选项 [1-5, 0]: {C_RESET}").strip()
+        choice = input(f"\n{C_BOLD}请输入选项 [1-6, 0]: {C_RESET}").strip()
         if choice == "1":
             toolkit.full_auto_setup()
             input(f"\n{C_YELLOW}按回车键继续...{C_RESET}")
@@ -270,6 +478,9 @@ def interactive_menu(toolkit: AdoFaiToolkit):
             input(f"\n{C_YELLOW}按回车键继续...{C_RESET}")
         elif choice == "5":
             toolkit.print_status()
+            input(f"\n{C_YELLOW}按回车键继续...{C_RESET}")
+        elif choice == "6":
+            toolkit.install_doorstop()
             input(f"\n{C_YELLOW}按回车键继续...{C_RESET}")
         elif choice == "0":
             print("感谢使用，再见！")
@@ -304,6 +515,8 @@ def main():
         toolkit.build_mod()
     elif "--install" in sys.argv:
         toolkit.install_mod()
+    elif "--doorstop" in sys.argv:
+        toolkit.install_doorstop()
     elif "--font" in sys.argv:
         toolkit.fix_font()
     else:
