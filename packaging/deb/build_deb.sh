@@ -11,8 +11,8 @@ ROOT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 
 VERSION="1.0.1"
 PKG="adofai-linux-fix"
-MAINTAINER="HoshiGT <HoshiGT@users.noreply.github.com>"
-HOMEPAGE="https://github.com/HoshiGT/adofai-linux-fix"
+MAINTAINER="AOSO-Hoshi <349151525+AOSO-Hoshi@users.noreply.github.com>"
+HOMEPAGE="https://github.com/AOSO-Hoshi/adofai-linux-fix"
 BUILD="$SCRIPT_DIR/build/$PKG"
 APP="/usr/lib/$PKG"
 
@@ -50,11 +50,10 @@ Recommends: mono-mcs, zip
 Suggests: steam
 Maintainer: $MAINTAINER
 Homepage: $HOMEPAGE
-Description: ADOFAI Linux native fix & UMM mod manager toolkit
- Toolkit for A DANCE OF FIRE AND ICE (冰与火之舞) on Linux / Steam Deck:
- drag-and-drop UMM mod manager GUI (GTK4, zh/en/ko), UMM assembly
- injector with backup/restore, shader-warmup crash fix mod, CJK font
- fix and environment diagnostics.
+Description: ADOFAI Linux native fix and mod toolkit
+ Toolkit for A Dance of Fire and Ice on Linux and Steam Deck.
+ Installs the shader-warmup crash fix mod, repairs the UMM assembly
+ injector, fixes CJK fonts, and checks the environment.
 EOF
 
 # ---------------------------------------------------------------- copyright
@@ -82,7 +81,7 @@ Upstream-Name: $PKG
 Source: $HOMEPAGE
 
 Files: *
-Copyright: 2026 HoshiGT
+Copyright: 2026 AOSO-Hoshi
 License: MIT
 $MIT_TEXT
 

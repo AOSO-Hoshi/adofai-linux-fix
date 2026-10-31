@@ -34,7 +34,7 @@
 直接克隆本仓库并执行交互式配置工具：
 
 ```bash
-git clone https://github.com/HoshiGT/adofai-linux-fix.git
+git clone https://github.com/AOSO-Hoshi/adofai-linux-fix.git
 cd adofai-linux-fix
 ./install.sh
 ```
@@ -47,7 +47,7 @@ cd adofai-linux-fix
 
 #### 方式二：手动安装已编译模组
 
-1. 前往 `dist/` 目录获取 `LinuxCrashFix-v1.0.0.zip`（或从 GitHub Releases 下载）；
+1. 前往 `dist/` 目录获取 `LinuxCrashFix-v1.0.1.zip`（或从 GitHub Releases 下载）；
 2. 打开 Unity Mod Manager（UMM）窗口（默认快捷键 `Ctrl + F10`）；
 3. 将压缩包直接拖入 UMM 的 **Mods** 标签页即可完成安装。
 
@@ -81,13 +81,13 @@ This toolkit provides an all-in-one fix and injection suite:
 
 #### Method 1: All-in-One CLI Tool
 ```bash
-git clone https://github.com/HoshiGT/adofai-linux-fix.git
+git clone https://github.com/AOSO-Hoshi/adofai-linux-fix.git
 cd adofai-linux-fix
 ./install.sh --auto
 ```
 
 #### Method 2: Manual Installation via UMM
-- Grab `dist/LinuxCrashFix-v1.0.0.zip` and drop it into the **Mods** tab in Unity Mod Manager (`Ctrl+F10`).
+- Grab `dist/LinuxCrashFix-v1.0.1.zip` and drop it into the **Mods** tab in Unity Mod Manager (`Ctrl+F10`).
 
 ### 🔨 Building from Source
 
@@ -106,7 +106,7 @@ adofai-linux-fix/
 │   └── LinuxCrashFix.cs         # C# Harmony patches & IMGUI controls
 ├── dist/
 │   ├── LinuxCrashFix/           # Pre-built mod folder
-│   └── LinuxCrashFix-v1.0.0.zip # UMM drag-and-drop archive
+│   └── LinuxCrashFix-v1.0.1.zip # UMM drag-and-drop archive
 ├── scripts/
 │   └── build.sh                 # Mono compilation script
 ├── adofai_fix.py                # Zero-dependency Python CLI / TUI toolkit
