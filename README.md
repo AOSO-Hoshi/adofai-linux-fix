@@ -14,7 +14,7 @@
 <a name="中文文档"></a>
 ## 中文说明
 
-### 痛点背景与修复原理
+### 修复原理
 
 在 Linux 原生环境运行 ADOFAI 时，玩家与模组开发者通常会遭遇以下四大痛点：
 
@@ -50,6 +50,8 @@ cd adofai-linux-fix
 1. 前往 `dist/` 目录获取 `LinuxCrashFix-v1.0.1.zip`（或从 GitHub Releases 下载）；
 2. 打开 Unity Mod Manager（UMM）窗口（默认快捷键 `Ctrl + F10`）；
 3. 将压缩包直接拖入 UMM 的 **Mods** 标签页即可完成安装。
+
+> 欢迎PR你们自己的发行版打包  
 
 ---
 
