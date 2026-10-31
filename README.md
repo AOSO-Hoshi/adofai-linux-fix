@@ -1,4 +1,4 @@
-# ADOFAI Linux Native Fix & Toolkit (完全体全套解决方案)
+# ADOFAI Linux Native Fix & Toolkit (Linux版本注入ADOFAI Mod完全体全套解决方案)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux%20%7C%20SteamDeck-orange.svg)]()
