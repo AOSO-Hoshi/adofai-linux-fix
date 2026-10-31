@@ -12,9 +12,9 @@
 ---
 
 <a name="中文文档"></a>
-## 🇨🇳 中文说明
+## 中文说明
 
-### 📌 痛点背景与修复原理
+### 痛点背景与修复原理
 
 在 Linux 原生环境运行 ADOFAI 时，玩家与模组开发者通常会遭遇以下四大痛点：
 
@@ -27,7 +27,7 @@
 
 ---
 
-### 🚀 快速使用
+### 快速使用
 
 #### 方式一：一键自动修复（推荐）
 
@@ -53,7 +53,7 @@ cd adofai-linux-fix
 
 ---
 
-### 🛠️ 工具箱功能 (`adofai_fix.py`)
+### 工具箱功能 (`adofai_fix.py`)
 
 本套件内置了零第三方依赖的 Python 控制台应用程序：
 - **`[1] 一键全自动修复`**：自动完成游戏路径检测、核心备份、模组部署、字体修正与白名单绕过。
@@ -65,9 +65,9 @@ cd adofai-linux-fix
 ---
 
 <a name="english-documentation"></a>
-## 🇬🇧 English Documentation
+## English Documentation
 
-### 📌 Overview
+### Overview
 
 Running *A Dance of Fire and Ice* (ADOFAI) natively on Linux or Steam Deck often encounters platform-specific issues caused by Unity's IMGUI loop, shader warmup driver incompatibilities, and strict third-party mod validation.
 
@@ -77,7 +77,7 @@ This toolkit provides an all-in-one fix and injection suite:
 3. **Together (TUF) Multiplayer Whitelist Bypass**: Dynamically intercepts the decrypted `Together.dll` in memory, adds `LinuxCrashFix` to `AllowedMods`, clears `CapturedMods`, and suppresses `CaptureDisallowedMods()`.
 4. **CJK Font Fix**: Auto-configures native Chinese/Japanese/Korean fallback fonts (DejaVu Sans / Noto Sans CJK / WenQuanYi) to prevent tofu blocks (`□□□`).
 
-### 📦 Installation
+### Installation
 
 #### Method 1: All-in-One CLI Tool
 ```bash
@@ -89,7 +89,7 @@ cd adofai-linux-fix
 #### Method 2: Manual Installation via UMM
 - Grab `dist/LinuxCrashFix-v1.0.1.zip` and drop it into the **Mods** tab in Unity Mod Manager (`Ctrl+F10`).
 
-### 🔨 Building from Source
+### Building from Source
 
 Requires Mono C# compiler (`mcs`):
 ```bash
@@ -98,7 +98,7 @@ Requires Mono C# compiler (`mcs`):
 
 ---
 
-### 📂 Project Structure
+### Project Structure
 
 ```
 adofai-linux-fix/
@@ -117,7 +117,7 @@ adofai-linux-fix/
 
 ---
 
-### 📄 License
+### License
 
 This project is licensed under the [MIT License](LICENSE).
 Created with ❤️ for the Linux & Steam Deck rhythm gaming community.
